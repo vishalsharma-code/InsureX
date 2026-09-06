@@ -1971,5 +1971,63 @@ export const api = {
       questions: userQuestions,
     };
   },
+
+  getSystemMetrics: () => {
+    initializeSeedData();
+    const policies = getStored<Policy[]>(STORAGE_KEYS.POLICIES, SEED_POLICIES);
+    const claims = getStored<Claim[]>(STORAGE_KEYS.CLAIMS, SEED_CLAIMS);
+    const registered = getStored<User[]>(STORAGE_KEYS.REGISTERED_USERS, []);
+
+    // Active policies
+    const activePolicies = policies.filter(p => p.status === 'ACTIVE');
+    
+    // Total Sum Assured Underwritten (from all active policies)
+    const totalSumAssured = activePolicies.reduce((acc, p) => acc + (p.coverage_amount || 0), 0);
+
+    // Real Unique Active Policyholders (Unique customer IDs / emails with at least one active policy)
+    const activeCustomerIdentities = new Set<string>();
+    activePolicies.forEach(p => {
+      const email = p.customer?.user?.email?.toLowerCase().trim();
+      const username = p.customer?.user?.username?.toLowerCase().trim();
+      const id = p.customer?.id || p.customer?.user?.id;
+      if (email) {
+        activeCustomerIdentities.add(email);
+      } else if (username) {
+        activeCustomerIdentities.add(username);
+      } else if (id) {
+        activeCustomerIdentities.add(`id_${id}`);
+      }
+    });
+
+    const activePolicyholdersCount = activeCustomerIdentities.size;
+
+    // Total unique registered / enrolled policyholders in the system
+    const totalCustomersInSystem = new Set<string>();
+    [SEED_USERS.CUSTOMER, ...ADDITIONAL_SEED_USERS.filter(u => u.role === 'CUSTOMER'), ...registered.filter(u => u.role === 'CUSTOMER')].forEach(u => {
+      if (u.email) totalCustomersInSystem.add(u.email.toLowerCase().trim());
+      else if (u.username) totalCustomersInSystem.add(u.username.toLowerCase().trim());
+    });
+
+    // Real Claim Settlement Ratio: (Settled + Approved claims) / Total decided claims (or total claims)
+    const settledClaimsCount = claims.filter(c => c.status === 'SETTLED' || c.status === 'APPROVED').length;
+    const rejectedClaimsCount = claims.filter(c => c.status === 'REJECTED').length;
+    const decidedClaims = settledClaimsCount + rejectedClaimsCount;
+    const settlementRatio = decidedClaims > 0 
+      ? ((settledClaimsCount / decidedClaims) * 100) 
+      : claims.length > 0 
+      ? ((settledClaimsCount / claims.length) * 100) 
+      : 100;
+
+    return {
+      activePoliciesCount: activePolicies.length,
+      activePolicyholdersCount,
+      totalRegisteredCustomersCount: totalCustomersInSystem.size,
+      totalSumAssured,
+      settlementRatio: Number(settlementRatio.toFixed(1)),
+      totalClaimsCount: claims.length,
+      settledClaimsCount,
+      rejectedClaimsCount,
+    };
+  },
 };
 

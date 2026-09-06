@@ -14,6 +14,7 @@ import { CalculatorModal } from './components/CalculatorModal';
 import { ApplyModal } from './components/ApplyModal';
 import { ApiDocsModal } from './components/ApiDocsModal';
 import { LoginScreen } from './components/LoginScreen';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { EditProfileModal } from './components/EditProfileModal';
 import { UserManagementView } from './components/UserManagementView';
 import { api } from './api';
@@ -34,6 +35,10 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User>(api.getCurrentUser());
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => api.isLoggedIn());
+  const [showLogin, setShowLogin] = useState<boolean>(false);
+  const [loginInitialPortal, setLoginInitialPortal] = useState<'ADMIN' | 'AGENT' | 'CUSTOMER'>('ADMIN');
+  const [loginInitialCustomerMode, setLoginInitialCustomerMode] = useState<'SIGNUP' | 'LOGIN'>('LOGIN');
+  const [isViewingWelcomePreview, setIsViewingWelcomePreview] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   const [plans, setPlans] = useState<InsurancePlan[]>([]);
@@ -68,6 +73,8 @@ export default function App() {
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
+    setShowLogin(false);
+    setIsViewingWelcomePreview(false);
     setActiveTab('dashboard');
     showToast(`Welcome back, ${user.first_name}! Logged into ${user.role} Portal.`, 'success');
   };
@@ -75,7 +82,31 @@ export default function App() {
   const handleLogout = () => {
     api.logout();
     setIsAuthenticated(false);
+    setShowLogin(false);
+    setIsViewingWelcomePreview(false);
     showToast('You have been securely signed out of InsureX.', 'info');
+  };
+
+  const handleEnterPortal = (
+    role: 'ADMIN' | 'AGENT' | 'CUSTOMER' = 'ADMIN',
+    customerMode: 'SIGNUP' | 'LOGIN' = 'LOGIN'
+  ) => {
+    setLoginInitialPortal(role);
+    setLoginInitialCustomerMode(customerMode);
+    setShowLogin(true);
+    setIsViewingWelcomePreview(false);
+  };
+
+  const handleQuickLoginFromWelcome = async (role: UserRole) => {
+    try {
+      let targetId = 'admin@insurex.com';
+      if (role === 'AGENT') targetId = 'agent@insurex.com';
+      if (role === 'CUSTOMER') targetId = 'customer@insurex.com';
+      const user = await api.login(targetId, 'demo2026');
+      handleLoginSuccess(user);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to authenticate demo account', 'error');
+    }
   };
 
   const handleResetDemoData = () => {
@@ -401,9 +432,72 @@ export default function App() {
   const headerMeta = getHeaderMeta();
 
   if (!isAuthenticated) {
+    if (!showLogin) {
+      return (
+        <>
+          <WelcomeScreen
+            onEnterPortal={handleEnterPortal}
+            onQuickLogin={handleQuickLoginFromWelcome}
+            plans={plans}
+          />
+          {toast && (
+            <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-xl border transition-all animate-in slide-in-from-bottom-5 ${
+              toast.type === 'error'
+                ? 'bg-red-500/90 text-white border-red-400'
+                : toast.type === 'info'
+                ? 'bg-blue-600/90 text-white border-blue-400'
+                : 'bg-slate-900/90 text-white border-white/20'
+            }`}>
+              {toast.type === 'error' ? (
+                <AlertCircle className="w-5 h-5 text-red-200 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-emerald-300 shrink-0" />
+              )}
+              <span className="text-xs font-semibold">{toast.message}</span>
+            </div>
+          )}
+        </>
+      );
+    }
+
     return (
       <>
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        <LoginScreen 
+          onLoginSuccess={handleLoginSuccess}
+          initialPortal={loginInitialPortal}
+          initialCustomerMode={loginInitialCustomerMode}
+          onBackToWelcome={() => setShowLogin(false)}
+        />
+        {toast && (
+          <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-xl border transition-all animate-in slide-in-from-bottom-5 ${
+            toast.type === 'error'
+              ? 'bg-red-500/90 text-white border-red-400'
+              : toast.type === 'info'
+              ? 'bg-blue-600/90 text-white border-blue-400'
+              : 'bg-slate-900/90 text-white border-white/20'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-5 h-5 text-red-200 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-300 shrink-0" />
+            )}
+            <span className="text-xs font-semibold">{toast.message}</span>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (isViewingWelcomePreview) {
+    return (
+      <>
+        <WelcomeScreen
+          onEnterPortal={handleEnterPortal}
+          onQuickLogin={handleQuickLoginFromWelcome}
+          plans={plans}
+          currentUser={currentUser}
+          onReturnToDashboard={() => setIsViewingWelcomePreview(false)}
+        />
         {toast && (
           <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-xl border transition-all animate-in slide-in-from-bottom-5 ${
             toast.type === 'error'
@@ -434,6 +528,7 @@ export default function App() {
         onLogout={handleLogout}
         onResetDemoData={handleResetDemoData}
         onEditProfile={() => setIsEditProfileOpen(true)}
+        onViewWelcome={() => setIsViewingWelcomePreview(true)}
       />
 
       {/* Main Content Area */}

@@ -18,7 +18,8 @@ import {
   History,
   HelpCircle,
   MessagesSquare,
-  Pencil
+  Pencil,
+  Sparkles
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 
@@ -30,6 +31,7 @@ interface SidebarProps {
   onResetDemoData?: () => void;
   onSwitchRole?: (role: UserRole) => void;
   onEditProfile?: () => void;
+  onViewWelcome?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   onResetDemoData,
   onEditProfile,
+  onViewWelcome,
 }) => {
   // Role-specific navigation items
   const getNavItems = () => {
@@ -225,6 +228,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User Profile, Reset Demo & Sign Out Card */}
       <div className="p-4 border-t border-white/10 bg-slate-950/40 space-y-2">
+        {onViewWelcome && (
+          <button
+            onClick={onViewWelcome}
+            title="View public Welcome & Landing Page"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 rounded-xl text-[11px] font-semibold transition-all cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <span>Welcome Landing Page</span>
+          </button>
+        )}
+
         {onResetDemoData && (
           <button
             onClick={onResetDemoData}

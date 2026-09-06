@@ -7,6 +7,7 @@ import {
   Phone, 
   MapPin, 
   ArrowRight, 
+  ArrowLeft,
   Zap, 
   Briefcase, 
   CheckCircle2, 
@@ -29,14 +30,22 @@ import { ForgotPasswordView } from './ForgotPasswordView';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: AuthUser) => void;
+  initialPortal?: 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  initialCustomerMode?: 'SIGNUP' | 'LOGIN';
+  onBackToWelcome?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ 
+  onLoginSuccess,
+  initialPortal = 'ADMIN',
+  initialCustomerMode = 'LOGIN',
+  onBackToWelcome,
+}) => {
   // Active Portal: ADMIN, AGENT, or CUSTOMER
-  const [activePortal, setActivePortal] = useState<'ADMIN' | 'AGENT' | 'CUSTOMER'>('ADMIN');
+  const [activePortal, setActivePortal] = useState<'ADMIN' | 'AGENT' | 'CUSTOMER'>(initialPortal);
 
   // Customer sub-mode: SIGNUP or LOGIN
-  const [customerMode, setCustomerMode] = useState<'SIGNUP' | 'LOGIN'>('SIGNUP');
+  const [customerMode, setCustomerMode] = useState<'SIGNUP' | 'LOGIN'>(initialCustomerMode);
 
   // Forgot Password page state
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -324,6 +333,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       {/* Main Container */}
       <div className={`w-full ${activePortal === 'CUSTOMER' && customerMode === 'SIGNUP' ? 'max-w-3xl' : 'max-w-xl'} relative z-10 transition-all duration-300`}>
         
+        {/* Back to Welcome Link */}
+        {onBackToWelcome && (
+          <div className="mb-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBackToWelcome}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white text-xs font-bold text-slate-700 hover:text-slate-950 border border-slate-200/90 shadow-sm transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-500" />
+              <span>Back to Welcome Page</span>
+            </button>
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              InsureX Gateway
+            </span>
+          </div>
+        )}
+
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl shadow-xl shadow-blue-500/30 text-white font-black text-2xl mb-3 border border-white/40">

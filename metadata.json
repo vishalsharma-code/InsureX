@@ -1,0 +1,6 @@
+{
+  "name": "InsureX – Insurance Management System",
+  "description": "A comprehensive insurance management system featuring policy administration, claims processing, premium calculation, and role-based portals for customers, agents, and administrators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
